@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Upload Data File Excel</title>
+    <style>
+      hr {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Upload Data File Excel</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+      <input type="file" name="excel" accept=".xlsx" />
+      <button type="submit">Submit</button>
+    </form>
+    <form action="/update" method="post">
+      <button type="submit">Update location</button>
+    </form>
+    <form action="/distance" method="post">
+      <button type="submit">Tool for maps</button>
+    </form>
+    <form action="/export" method="get">
+      <button type="submit">Export Data</button>
+    </form>
+
+    <ul>
+      <% data.forEach((item, index) => { %>
+      <li><%= index + 1 %>.</li>
+      <li>sell_id: <%= item.sell_id %></li>
+      <li>co_add: <%= item.co_add %></li>
+      <li>coe_add: <%= item.coe_add %></li>
+      <li>assignee: <%= item.assignee %></li>
+      <% if (item.distance) { %>
+      <li>distance: <%= item.distance %></li>
+      <% } %> <% if (item.directionsLink) { %>
+      <li>
+        directions:
+        <a href="<%= item.directionsLink %>" target="_blank">here</a>
+      </li>
+      <% } %>
+      <hr />
+      <% }) %>
+    </ul>
+  </body>
+</html>
