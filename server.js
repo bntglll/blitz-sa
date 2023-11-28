@@ -105,6 +105,7 @@ app.post("/upload", upload.single("excel"), (req, res) => {
 
 
 
+
 app.post("/update", (req, res) => {
   Data.find({})
     .then((data) => {
