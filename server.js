@@ -68,47 +68,56 @@ app.post("/upload", upload.single("excel"), (req, res) => {
   const path = `${BUCKET}/${req.file.path}`;
 
   // Membaca file excel dari bucket S3 dengan menggunakan modul @cyclic.sh/s3fs
-  const readStream = s3fs.createReadStream(path);
-  const chunks = [];
+  // Mengubah metode s3fs.createReadStream menjadi response.Body.pipe
+  s3fs.getObject(path, (err, response) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Gagal membaca file excel dari bucket S3");
+    } else {
+      const readStream = response.Body.pipe();
+      const chunks = [];
 
-  readStream.on("data", (chunk) => {
-    chunks.push(chunk);
-  });
+      readStream.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
 
-  readStream.on("end", () => {
-    const data = Buffer.concat(chunks);
-    const workbook = xlsx.read(data);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = xlsx.utils.sheet_to_json(sheet);
+      readStream.on("end", () => {
+        const data = Buffer.concat(chunks);
+        const workbook = xlsx.read(data);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = xlsx.utils.sheet_to_json(sheet);
 
-    // Kode program lainnya
+        // Kode program lainnya
 
-    // Menghapus file excel dari bucket S3
-    s3fs.unlink(path, (err) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log("Deleted file from S3 bucket");
-      }
-    });
+        // Menghapus file excel dari bucket S3
+        s3fs.unlink(path, (err) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Deleted file from S3 bucket");
+          }
+        });
 
-    // Contoh: Menyimpan data ke MongoDB
-    Data.deleteMany({})
-      .then(() => console.log("Deleted old data"))
-      .catch((err) => console.error(err));
+        // Contoh: Menyimpan data ke MongoDB
+        Data.deleteMany({})
+          .then(() => console.log("Deleted old data"))
+          .catch((err) => console.error(err));
 
-    Data.insertMany(jsonData)
-      .then(() => console.log("Inserted new data"))
-      .catch((err) => console.error(err));
+        Data.insertMany(jsonData)
+          .then(() => console.log("Inserted new data"))
+          .catch((err) => console.error(err));
 
-    res.send("File excel berhasil diunggah dan disimpan ke MongoDB");
-  });
+        res.send("File excel berhasil diunggah dan disimpan ke MongoDB");
+      });
 
-  readStream.on("error", (error) => {
-    console.error(error);
-    res.status(500).send("Gagal membaca file excel dari bucket S3");
+      readStream.on("error", (error) => {
+        console.error(error);
+        res.status(500).send("Gagal membaca file excel dari bucket S3");
+      });
+    }
   });
 });
+
 
 app.post("/update", (req, res) => {
   Data.find({})
