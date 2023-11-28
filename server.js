@@ -67,56 +67,42 @@ app.get("/", (req, res) => {
 app.post("/upload", upload.single("excel"), (req, res) => {
   const path = `${BUCKET}/${req.file.path}`;
 
-  // Membaca file excel dari bucket S3 dengan menggunakan modul @cyclic.sh/s3fs
-  // Mengubah metode s3fs.createReadStream menjadi response.Body.pipe
-  s3fs.getObject(path, (err, response) => {
+  // Membaca file excel dari bucket S3 dengan menggunakan modul @cyclic/sh/s3fs
+  // Mengubah metode s3fs.getObject menjadi metode s3fs.get
+  s3fs.get(path, (err, data) => {
     if (err) {
       console.error(err);
       res.status(500).send("Gagal membaca file excel dari bucket S3");
     } else {
-      const readStream = response.Body.pipe();
-      const chunks = [];
+      const workbook = xlsx.read(data);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = xlsx.utils.sheet_to_json(sheet);
 
-      readStream.on("data", (chunk) => {
-        chunks.push(chunk);
+      // Kode program lainnya
+
+      // Menghapus file excel dari bucket S3
+      s3fs.unlink(path, (err) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log("Deleted file from S3 bucket");
+        }
       });
 
-      readStream.on("end", () => {
-        const data = Buffer.concat(chunks);
-        const workbook = xlsx.read(data);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = xlsx.utils.sheet_to_json(sheet);
+      // Contoh: Menyimpan data ke MongoDB
+      Data.deleteMany({})
+        .then(() => console.log("Deleted old data"))
+        .catch((err) => console.error(err));
 
-        // Kode program lainnya
+      Data.insertMany(jsonData)
+        .then(() => console.log("Inserted new data"))
+        .catch((err) => console.error(err));
 
-        // Menghapus file excel dari bucket S3
-        s3fs.unlink(path, (err) => {
-          if (err) {
-            console.error(err);
-          } else {
-            console.log("Deleted file from S3 bucket");
-          }
-        });
-
-        // Contoh: Menyimpan data ke MongoDB
-        Data.deleteMany({})
-          .then(() => console.log("Deleted old data"))
-          .catch((err) => console.error(err));
-
-        Data.insertMany(jsonData)
-          .then(() => console.log("Inserted new data"))
-          .catch((err) => console.error(err));
-
-        res.send("File excel berhasil diunggah dan disimpan ke MongoDB");
-      });
-
-      readStream.on("error", (error) => {
-        console.error(error);
-        res.status(500).send("Gagal membaca file excel dari bucket S3");
-      });
+      res.send("File excel berhasil diunggah dan disimpan ke MongoDB");
     }
   });
 });
+
 
 
 app.post("/update", (req, res) => {
