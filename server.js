@@ -4,7 +4,7 @@ const xlsx = require("xlsx");
 const mongoose = require("mongoose");
 const axios = require("axios");
 // Mengganti modul fs dengan modul @cyclic/sh/s3fs
-const s3fs = require("@cyclic.sh/s3fs");
+const s3fs = require("@cyclic/sh/s3fs");
 const BUCKET =
   process.env.BUCKET || "cyclic-attractive-eel-cowboy-boots-ap-southeast-2";
 
@@ -68,8 +68,9 @@ app.post("/upload", upload.single("excel"), (req, res) => {
   const path = `${BUCKET}/${req.file.path}`;
 
   // Membaca file excel dari bucket S3 dengan menggunakan modul @cyclic/sh/s3fs
-  // Mengubah metode s3fs.getObject menjadi metode s3fs.get
-  s3fs.get(path, (err, data) => {
+  // Mengubah metode s3fs.getObject menjadi metode s3fs.readFile
+  // Metode s3fs.readFile mengembalikan buffer dari file yang dibaca
+  s3fs.readFile(path, (err, data) => {
     if (err) {
       console.error(err);
       res.status(500).send("Gagal membaca file excel dari bucket S3");
@@ -102,6 +103,7 @@ app.post("/upload", upload.single("excel"), (req, res) => {
     }
   });
 });
+
 
 
 
